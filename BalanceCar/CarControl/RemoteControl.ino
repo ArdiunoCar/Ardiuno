@@ -136,3 +136,35 @@ String Send_Speed_Angle(float _LeftPWMnum,float  _RightPWMnum,float  _Angle,floa
   String DataSend = "$LV" + LV + ",RV" + RV + ",AC" + AC + ",GY" + GY + ",CSB" + CSB + ",VT" + VT + "#";
   return DataSend; //返回协议数据包
 }
+
+String Send_Speed_Angle_GPS(float _LeftPWMnum,float  _RightPWMnum,float  _Angle,char*  _TIME, char* _lati,char* _long) {
+  char temp[10];
+  String LV, RV, AC, GY, CSB, VT;
+
+  memset(temp, 0, sizeof(temp));
+  dtostrf( _LeftPWMnum, 3, 1, temp);
+  LV = temp;
+
+  memset(temp, 0, sizeof(temp));
+  dtostrf( _RightPWMnum, 3, 1, temp);
+  RV = temp;
+
+  memset(temp, 0, sizeof(temp));
+  dtostrf( _Angle, 2, 2, temp);
+  AC = temp;
+  
+  GY = "";
+  if(_lati==NULL) GY="0";
+  else for (int i =0 ; i< sizeof(_lati);i++) GY +=_lati[i];
+  
+  CSB = GY;
+  
+  VT = "";
+  if(_long==NULL)VT ="0";
+  else for (int i =0 ; i< sizeof(_long);i++) GY +=_long[i];
+
+  
+  String DataSend = "$LV" + LV + ",RV" + RV + ",AC" + AC + ",GY" + GY + ",CSB" + CSB + ",VT" + VT + "#";
+ // Serial.println(VT);
+  return DataSend; //返回协议数据包
+}

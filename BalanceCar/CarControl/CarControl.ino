@@ -1,5 +1,4 @@
 /**************
-
      Arduino uno r3 有两个外部中断可用，分别为：
                                                Pin2
                                                Pin3
@@ -12,12 +11,11 @@
 
     为避免冲突，管脚分配如下：
 
-               TB6612FNG驱动模块                   霍尔编码器模块                    MPU6050            蓝牙模块
-          Pin9   -->   左电机PWM/PWMA   //      Pin2   -->   左编码器A相   //     SCL/A5 --> SCL  //   0 -->  TX
-          Pin10  -->   右电机PWM/PWMB   //      Pin3   -->   右编码器A相   //    SDA/A4 --> SDA   //   1 --> RX2
+               TB6612FNG驱动模块                   霍尔编码器模块                    MPU6050            蓝牙模块              GPS模块
+          Pin9   -->   左电机PWM/PWMA   //      Pin2   -->   左编码器A相   //     SCL/A5 --> SCL  //   0 -->  TX    //       Pin8 --> RX
+          Pin10  -->   右电机PWM/PWMB   //      Pin3   -->   右编码器A相   //    SDA/A4 --> SDA   //   1 --> RX2    //      
           6 -->  AIN1   7 -->  AIN2
           12 --> BIN1   13 --> BIN2
-
 */
 
 /*********包含必要的库文件****************/
@@ -47,10 +45,20 @@
 #define BIN2 13
 */
 
-
 /**********************管脚定义*************************/
 
-
+struct GPS
+{
+  char GPS_Buffer[80];
+  bool isGetData;   //是否获取到GPS数据
+  bool isParseData; //是否解析完成
+  char UTCTime[11];   //UTC时间
+  char latitude[11];    //纬度
+  char N_S[2];    //N/S
+  char longitude[12];   //经度
+  char E_W[2];    //E/W
+  bool isUsefull;   //定位信息是否有效
+} ;
 
 volatile int LeftPulseCount = 0; //左轮A相脉冲计数
 volatile int RightPulseCount = 0;//右轮A相脉冲计数
@@ -170,63 +178,63 @@ void Remote_Control() {
 
 
 /***********串口接收数据*************/
-void Serial_Receive() {
-  
-  if (Serial.available()) {
-    DataReceive = "";
-    bool isDataBegin = false;
-    bool isDataEnd = false;
-    while (Serial.available() && isDataEnd == false) {
-      delay(10);
-      int temp = Serial.read();
-      //Serial.println(temp);
-      //-------------------------wifi指令-----------------------------//
-      if(temp == 0xFF){
-          //  Serial.println("test");
-           unsigned char Com[3];
-           int DataCount = 0;
-           memset(Com ,0,sizeof(Com));
-           while(Serial.available()){
-                delay(10);
-                temp = Serial.read();
-                if(DataCount < 3)Com[DataCount ++] = temp;
-           }
-           if(temp == 0xFF && DataCount == 3){
-                if(Com[1]==0x00){    //停止
-                    DataReceive = "$0,0,0,0,0,0,0,0,0,0" ;
-                }
-                else if(Com[1]==0x01){   //前进
-                    DataReceive = "$1,0,0,0,0,0,0,0,0,0" ;
-                }
-                else if(Com[1]==0x02){   //后退
-                    DataReceive = "$2,0,0,0,0,0,0,0,0,0" ;
-                }
-                else if(Com[1]==0x04){  //左转
-                     DataReceive = "$3,0,0,0,0,0,0,0,0,0" ;
-                }
-                else if(Com[1]==0x03){   //右转
-                     DataReceive = "$4,0,0,0,0,0,0,0,0,0" ;
-                }
-                isDataBegin = true ;
-                isDataEnd = true ;
-           }
-      }
-    //  Serial.println(DataReceive);
-      /*-------------------------wifi指令-----------------------------*/
-      
-      if (temp == '$') {
-        isDataBegin = true ;
-      }
-      else if (temp == '#') {
-        isDataEnd = true ;
-      }
-      if (isDataBegin && !isDataEnd )DataReceive += (char)temp;
-    }
-    if (isDataBegin && isDataEnd) {
-      NewCommandReceived = true;
-    }
-  }
-}
+//void Serial_Receive() {
+//  
+//  if (Serial.available()) {
+//    DataReceive = "";
+//    bool isDataBegin = false;
+//    bool isDataEnd = false;
+//    while (Serial.available() && isDataEnd == false) {
+//      delay(10);
+//      int temp = Serial.read();
+//      //Serial.println(temp);
+//      //-------------------------wifi指令-----------------------------//
+//      if(temp == 0xFF){
+//          //  Serial.println("test");
+//           unsigned char Com[3];
+//           int DataCount = 0;
+//           memset(Com ,0,sizeof(Com));
+//           while(Serial.available()){
+//                delay(10);
+//                temp = Serial.read();
+//                if(DataCount < 3)Com[DataCount ++] = temp;
+//           }
+//           if(temp == 0xFF && DataCount == 3){
+//                if(Com[1]==0x00){    //停止
+//                    DataReceive = "$0,0,0,0,0,0,0,0,0,0" ;
+//                }
+//                else if(Com[1]==0x01){   //前进
+//                    DataReceive = "$1,0,0,0,0,0,0,0,0,0" ;
+//                }
+//                else if(Com[1]==0x02){   //后退
+//                    DataReceive = "$2,0,0,0,0,0,0,0,0,0" ;
+//                }
+//                else if(Com[1]==0x04){  //左转
+//                     DataReceive = "$3,0,0,0,0,0,0,0,0,0" ;
+//                }
+//                else if(Com[1]==0x03){   //右转
+//                     DataReceive = "$4,0,0,0,0,0,0,0,0,0" ;
+//                }
+//                isDataBegin = true ;
+//                isDataEnd = true ;
+//           }
+//      }
+//    //  Serial.println(DataReceive);
+//      /*-------------------------wifi指令-----------------------------*/
+//      
+//      if (temp == '$') {
+//        isDataBegin = true ;
+//      }
+//      else if (temp == '#') {
+//        isDataEnd = true ;
+//      }
+//      if (isDataBegin && !isDataEnd )DataReceive += (char)temp;
+//    }
+//    if (isDataBegin && isDataEnd) {
+//      NewCommandReceived = true;
+//    }
+//  }
+//}
 /***********串口接收数据*************/ 
 
 
@@ -255,7 +263,7 @@ void Timer2_Inter_5ms() {
   //Serial.println(AngleOut);
   PWM_Cal(Angle, AngleOut,  SpeedOut ,TurnOut , &LeftPWMnum, &RightPWMnum, &Position); //////////////////////////////////////////////////////////
   Set_Motor(LeftPWMnum, RightPWMnum);
-  if(Count50ms >= 10)Count50ms = 0;
+  if(Count50ms >= 200)Count50ms = 0;
   else Count50ms ++;
   
 }
@@ -295,26 +303,37 @@ void setup() {
   MsTimer2::set(5, Timer2_Inter_5ms  ); // 5ms定时中断
   MsTimer2::start();
   Serial.begin(9600);
+
+  GPS_init();
   
 }
 
 void loop() {
-  
-  //Serial.println(BACK);
-  Serial_Receive();
-  Remote_Control();
+
+
+//  Serial_Receive();
+//  Remote_Control();
+  gpsRead();  //获取GPS数据
+  parseGpsBuffer();//解析GPS数据
   if(Count50ms==0){
-    String DataSend = Send_Speed_Angle(LeftPWMnum,RightPWMnum, Angle, AngleOut,AngleOut, SpeedOut); 
-    Serial.println(DataSend);
+     String DataSend = "Error without data!";
+     GPS GPSData = getGPSData();
+     if(GPSData.isUsefull)  DataSend = Send_Speed_Angle_GPS(LeftPWMnum,RightPWMnum, Angle, GPSData.latitude,GPSData.latitude, GPSData.longitude);
+     else 
+        DataSend = Send_Speed_Angle(LeftPWMnum,RightPWMnum, Angle, AngleOut,AngleOut, SpeedOut); 
+  //  String DataSend = Send_Speed_Angle(LeftPWMnum,RightPWMnum, Angle, AngleOut,AngleOut, SpeedOut); 
+ //  printGpsBuffer();//输出解析后的数据
+     Serial.println(DataSend);
   }
- // Serial.print("Gyro_gx:  "); Serial.print(Gyro_gx); /* Serial.print("  Angle:  "); Serial.print(Angle);
-  /*Serial.print("  AngleOut:  ") ; Serial.print(AngleOut);
+  //Serial.print("Gyro_gx:  "); Serial.print(Gyro_gx); 
+  /* Serial.print("  Angle:  "); Serial.print(Angle);
+  Serial.print("  AngleOut:  ") ; Serial.print(AngleOut);
   Serial.print("  SpeedOut:  "); Serial.print(SpeedOut);
   Serial.print("  OUT:  "); Serial.print(LeftPWMnum);
   Serial.print("  Speed: "); Serial.println(Speed);*/
   switch (CarState){
     case BACK:
-      run_back = -300;
+      run_back = -380;
       TurnOut = 0;
       break;
     case RUN:
@@ -323,19 +342,19 @@ void loop() {
       break;
     case LEFT: 
       run_back = 0;
-      TurnOut = 150;
+      TurnOut = 70;
       break;
     case RIGHT:
       run_back = 0;
-      TurnOut = -150;
+      TurnOut = -70;
       break;
     case SpinLEFT:
       run_back = 0;
-      TurnOut = -100;
+      TurnOut = 70;
       break;
     case SpinRIGHT:
       run_back = 0;
-      TurnOut = 100;
+      TurnOut = -70;
       break;
     default:
       run_back = 0;
@@ -347,5 +366,7 @@ void loop() {
  // Serial.print(SpeedOut);
  // Serial.print("  ");
  // Serial.println(AngleOut);
+
+  
 }
 
