@@ -1,6 +1,6 @@
+#include "Filter.h"
 
-
-//******卡尔曼参数************
+//******卡尔曼参数参数************
 
 float  Q_angle = 0.001;
 float  Q_gyro = 0.005;
@@ -17,9 +17,9 @@ float  PP[2][2] = { { 1, 0 }, { 0, 1 } };
 
 
 /*************卡尔曼滤波********************************/
-void Kalman_Filter(float _Accel, float _Gyro, float* _Angle) // 滤波
+float Kalman_Filter_CalAngle(float _Accel, float _Gyro, float _Angle) // 滤波
 {
-  *_Angle += (_Gyro - Q_bias) * dt; //先验估计陀螺角度
+  _Angle += (_Gyro - Q_bias) * dt; //先验估计陀螺角度
 
   Pdot[0] = Q_angle - PP[0][1] - PP[1][0]; // Pk-先验估计误差协方差的微分
 
@@ -32,7 +32,7 @@ void Kalman_Filter(float _Accel, float _Gyro, float* _Angle) // 滤波
   PP[1][0] += Pdot[2] * dt;
   PP[1][1] += Pdot[3] * dt;
 
-  Angle_err = _Accel - *_Angle;//zk-先验估计
+  Angle_err = _Accel - _Angle;//zk-先验估计
 
   PCt_0 = C_0 * PP[0][0];
   PCt_1 = C_0 * PP[1][0];
@@ -50,10 +50,10 @@ void Kalman_Filter(float _Accel, float _Gyro, float* _Angle) // 滤波
   PP[1][0] -= K_1 * t_0;
   PP[1][1] -= K_1 * t_1;
 
-  *_Angle += K_0 * Angle_err; //后验估计
+  _Angle += K_0 * Angle_err; //后验估计
   Q_bias += K_1 * Angle_err; //后验估计
-  Gyro_y   = _Gyro - Q_bias; //输出值(后验估计)的微分=角速度
-
+  //Gyro_y  = _Gyro - Q_bias; //输出值(后验估计)的微分=角速度
+  return _Angle;
 }
 /*************卡尔曼滤波********************************/
 
